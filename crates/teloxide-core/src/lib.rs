@@ -109,7 +109,7 @@
 
 // The internal helper macros.
 #[macro_use]
-mod local_macros;
+pub mod local_macros;
 
 pub use self::{
     bot::Bot,

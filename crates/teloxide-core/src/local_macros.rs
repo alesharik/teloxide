@@ -401,6 +401,7 @@ macro_rules! download_forward {
     };
 }
 
+#[macro_export]
 macro_rules! requester_forward {
     ($i:ident $(, $rest:ident )* $(,)? => $body:ident, $ty:ident ) => {
         requester_forward!(@method $i $body $ty);
@@ -1499,6 +1500,8 @@ macro_rules! requester_forward {
         }
     };// END BLOCK requester_forward_at_method
 }
+
+pub use requester_forward;
 
 #[test]
 // waffle: efficiency is not important here, and I don't want to rewrite this
