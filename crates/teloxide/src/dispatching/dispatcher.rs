@@ -410,11 +410,12 @@ where
 
         let stop_token = Some(update_listener.stop_token());
 
-        tokio::spawn(self.start_listening(
+        self.start_listening(
             update_listener,
             update_listener_error_handler,
             stop_token,
-        ));
+        ).await;
+
         Ok(())
     }
 
