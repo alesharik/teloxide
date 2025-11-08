@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="./media/teloxide-logo.png" width="250"/>
+  <img src="https://github.com/teloxide/teloxide/blob/master/media/teloxide-logo.png?raw=true" width="250"/>
   <h1><code>teloxide</code></h1>
   <a href="https://docs.rs/teloxide/">
     <img src="https://docs.rs/teloxide/badge.svg">
@@ -11,10 +11,13 @@
     <img src="https://img.shields.io/crates/v/teloxide.svg">
   </a>
   <a href="https://core.telegram.org/bots/api">
-    <img src="https://img.shields.io/badge/API%20coverage-Up%20to%207.2%20(inclusively)-green.svg">
+    <img src="https://img.shields.io/badge/API%20coverage-Up%20to%209.1%20(inclusively)-green.svg">
   </a>
   <a href="https://t.me/teloxide">
     <img src="https://img.shields.io/badge/support-t.me%2Fteloxide-blueviolet">
+  </a>
+  <a href="https://devpod.sh/open#https://github.com/teloxide/teloxide">
+    <img src="https://img.shields.io/badge/Open_in-DevPod-blueviolet">
   </a>
 
   A full-featured framework that empowers you to easily build [Telegram bots](https://telegram.org/blog/bot-revolution) using [Rust](https://www.rust-lang.org/). It handles all the difficult stuff so you can focus only on your business logic.
@@ -29,13 +32,13 @@
 
  - **Feature-rich.** You can use both long polling and webhooks, configure an underlying HTTPS client, set a custom URL of a Telegram API server, do graceful shutdown, and much more.
 
- - **Simple dialogues.** Our dialogues subsystem is simple and easy-to-use, and, furthermore, is agnostic of how/where dialogues are stored. For example, you can just replace a one line to achieve [persistence]. Out-of-the-box storages include [Redis] and [Sqlite].
+ - **Simple dialogues.** Our dialogues subsystem is simple and easy-to-use, and, furthermore, is agnostic of how/where dialogues are stored. For example, you can simply replace one line to achieve [persistence]. Out-of-the-box storages include [Redis] and [Sqlite].
 
 [persistence]: https://en.wikipedia.org/wiki/Persistence_(computer_science)
 [Redis]: https://redis.io/
 [Sqlite]: https://www.sqlite.org
 
- - **Strongly typed commands.** Define bot commands as an `enum` and teloxide will parse them automatically — just like JSON structures in [`serde-json`] and command-line arguments in [`structopt`].
+ - **Strongly typed commands.** Define bot commands as an `enum` and `teloxide` will parse them automatically — just like JSON structures in [`serde-json`] and command-line arguments in [`structopt`].
 
 [`structopt`]: https://github.com/TeXitoi/structopt
 [`serde-json`]: https://github.com/serde-rs/json
@@ -56,7 +59,7 @@ $ set TELOXIDE_TOKEN=<Your token here>
 $ $env:TELOXIDE_TOKEN=<Your token here>
 ```
 
- 4. Make sure that your Rust compiler is up to date (`teloxide` currently requires rustc at least version 1.80):
+ 4. Make sure that your Rust compiler is up to date (`teloxide` currently requires rustc at least version 1.82):
 ```bash
 # If you're using stable
 $ rustup update stable
@@ -70,10 +73,16 @@ $ rustup override set nightly
  5. Run `cargo new my_bot`, enter the directory and put these lines into your `Cargo.toml`:
 ```toml
 [dependencies]
-teloxide = { version = "0.13", features = ["macros"] }
+teloxide = { version = "0.17.0", features = ["macros"] }
 log = "0.4"
 pretty_env_logger = "0.5"
 tokio = { version =  "1.8", features = ["rt-multi-thread", "macros"] }
+```
+
+_Note: if there is functionality in master that is not released yet, you can pull the Git repository as follows:_
+
+```toml
+teloxide = { git = "https://github.com/teloxide/teloxide.git", features = ["macros"] }
 ```
 
 ## API overview
@@ -103,7 +112,7 @@ async fn main() {
 ```
 
 <div align="center">
-    <img src="./media/throw-dice.gif" width="420" />
+    <img src="https://github.com/teloxide/teloxide/blob/master/media/throw-dice.gif?raw=true" width="420" />
 </div>
 
 ### Commands
@@ -160,7 +169,7 @@ async fn answer(bot: Bot, msg: Message, cmd: Command) -> ResponseResult<()> {
 ```
 
 <div align="center">
-    <img src="./media/command.gif" width="420" />
+    <img src="https://github.com/teloxide/teloxide/blob/master/media/command.gif?raw=true" width="420" />
 </div>
 
 ### Dialogues management
@@ -279,21 +288,22 @@ async fn receive_location(
 ```
 
 <div align="center">
-    <img src="./media/dialogue.gif" width="420" />
+    <img src="https://github.com/teloxide/teloxide/blob/master/media/dialogue.gif?raw=true" width="420" />
 </div>
 
 [More examples >>](crates/teloxide/examples/)
 
 ## Testing
 
-A community made crate [`teloxide_tests`](https://github.com/LasterAlex/teloxide_tests) can be used to test your bots.
+The community has made a crate called [`teloxide_tests`](https://github.com/LasterAlex/teloxide_tests) for testing `teloxide` bots.
 
-[Some testing examples >>](https://github.com/LasterAlex/teloxide_tests/tree/master/examples)
+[See some testing examples >>](https://github.com/LasterAlex/teloxide_tests/tree/master/examples)
 
 ## Tutorials
 
- - [_"Migrating my family finance bot from Python to Rust (teloxide) because I am tired of exceptions (part 1)"_](https://trkohler.com/posts/i-migrated-my-family-finance-bot-from-python-to-rust-because-i-am-tired-of-exceptions/) by Troy Köhler.
- - [_"Migrating my family finance bot from Python to Rust (teloxide) [part 2]"_](https://trkohler.com/posts/migrating-my-family-finance-bot-from-python-to-rust-teloxide-part-2/) by Troy Köhler.
+ - [_`dptree` starter guide with teloxide_](https://github.com/teloxide/teloxide/blob/master/DPTREE_GUIDE.md)
+ - [_"Migrating my family finance bot from Python to Rust (teloxide) because I am tired of exceptions (part 1)"_](https://web.archive.org/web/20230130112018/https://trkohler.com/posts/i-migrated-my-family-finance-bot-from-python-to-rust-because-i-am-tired-of-exceptions/) by Troy Köhler.
+ - [_"Migrating my family finance bot from Python to Rust (teloxide) [part 2]"_](https://web.archive.org/web/20240529200929/https://trkohler.com/posts/migrating-my-family-finance-bot-from-python-to-rust-teloxide-part-2/) by Troy Köhler.
 
 ## FAQ
 
@@ -315,11 +325,24 @@ A: No, only the bots API.
 
 **Q: Can I use webhooks?**
 
-A: You can! `teloxide` has a built-in support for webhooks in `dispatching::update_listeners::webhooks` module. See how it's used in [`examples/ngrok_ping_pong_bot`](crates/teloxide/examples/ngrok_ping_pong.rs) and [`examples/heroku_ping_pong_bot`](crates/teloxide/examples/heroku_ping_pong.rs).
+A: You can! `teloxide` has a built-in support for webhooks in `dispatching::update_listeners::webhooks` module. See how it's used in [`examples/ngrok_ping_pong_bot.rs`](crates/teloxide/examples/ngrok_ping_pong.rs) and [`examples/heroku_ping_pong_bot.rs`](crates/teloxide/examples/heroku_ping_pong.rs).
 
 **Q: Can I handle both callback queries and messages within a single dialogue?**
 
 A: Yes, see [`examples/purchase.rs`](crates/teloxide/examples/purchase.rs).
+
+**Q: How can I organize complex logic?**
+
+A: You can use [`CommonVoiceBot`] as an example of a bot with a nested dialogue structure distributed across different files.
+
+[`CommonVoiceBot`]: https://gitlab.com/alenpaulvarghese/commonvoicebot
+
+**Q: Where can I find a WebApp example?**
+
+A: Check out [@TheAwiteb]'s [WebApp `teloxide` example].
+
+[@TheAwiteb]: https://github.com/TheAwiteb
+[WebApp `teloxide` example]: https://gist.github.com/TheAwiteb/8d809b34b619b01e64453bb31dbd8bf4
 
 ## Community bots
 
@@ -341,20 +364,7 @@ Feel free to propose your own bot to our collection!
  - [`fr0staman/fr0staman_bot`](https://github.com/fr0staman/fr0staman_bot) — Feature rich Telegram game-like bot with pigs 🐽.
  - [`franciscofigueira/transferBot`](https://github.com/franciscofigueira/transferBot) — Telegram bot that notifies of crypto token transfers.
 
-<details>
-<summary>Show bots using `teloxide` older than v0.6.0</summary>
-
- - [`mxseev/logram`](https://github.com/mxseev/logram) — Utility that takes logs from anywhere and sends them to Telegram.
- - [`alexkonovalov/PedigreeBot`](https://github.com/alexkonovalov/PedigreeBot) — A Telegram bot for building family trees.
- - [`Hermitter/tepe`](https://github.com/Hermitter/tepe) — A CLI to command a bot to send messages and files over Telegram.
- - [`myblackbeard/basketball-betting-bot`](https://github.com/myblackbeard/basketball-betting-bot) — The bot lets you bet on NBA games against your buddies.
- - [`dracarys18/grpmr-rs`](https://github.com/dracarys18/grpmr-rs) — Modular Telegram Group Manager Bot written in Rust.
- - [`ArtHome12/cognito_bot`](https://github.com/ArtHome12/cognito_bot) — The bot is designed to anonymize messages to a group.
- - [`crapstone/hsctt`](https://codeberg.org/crapstones-bots/hsctt) — A bot that converts HTTP status codes into text.
-
-</details>
-
-See [1900+ other public repositories using `teloxide` >>](https://github.com/teloxide/teloxide/network/dependents)
+See [2500+ other public repositories using `teloxide` >>](https://github.com/teloxide/teloxide/network/dependents)
 
 ## Contributing
 

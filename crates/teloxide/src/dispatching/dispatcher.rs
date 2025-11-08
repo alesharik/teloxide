@@ -10,7 +10,7 @@ use crate::{
     update_listeners::{self, UpdateListener},
 };
 
-use dptree::di::{DependencyMap, DependencySupplier};
+use dptree::di::DependencyMap;
 use either::Either;
 use futures::{
     future::{self, BoxFuture},
@@ -45,7 +45,6 @@ pub struct DispatcherBuilder<R, Err, Key> {
     ctrlc_handler: bool,
     distribution_f: fn(&Update) -> Option<Key>,
     worker_queue_size: usize,
-    stack_size: usize,
 }
 
 impl<R, Err, Key> DispatcherBuilder<R, Err, Key>
@@ -110,8 +109,9 @@ where
     ///
     /// By default, it's 8 * 1024 * 1024 bytes (8 MiB).
     #[must_use]
-    pub fn stack_size(self, size: usize) -> Self {
-        Self { stack_size: size, ..self }
+    #[deprecated(since = "0.15.0", note = "This method is a no-op; you can just remove it.")]
+    pub fn stack_size(self, _size: usize) -> Self {
+        self
     }
 
     /// Specifies the distribution function that decides how updates are grouped
@@ -186,7 +186,6 @@ where
             ctrlc_handler,
             distribution_f: _,
             worker_queue_size,
-            stack_size,
         } = self;
 
         DispatcherBuilder {
@@ -198,11 +197,14 @@ where
             ctrlc_handler,
             distribution_f: f,
             worker_queue_size,
-            stack_size,
         }
     }
 
     /// Constructs [`Dispatcher`].
+    ///
+    /// ## Panics
+    /// This function will panic at run-time if [`dptree`] fails to type-check
+    /// the provided handler. An appropriate error message will be emitted.
     #[must_use]
     pub fn build(self) -> Dispatcher<R, Err, Key> {
         let Self {
@@ -214,8 +216,17 @@ where
             distribution_f,
             worker_queue_size,
             ctrlc_handler,
-            stack_size,
         } = self;
+
+        dptree::type_check(
+            handler.sig(),
+            &dependencies,
+            &[
+                dptree::Type::of::<R>(),
+                dptree::Type::of::<teloxide_core::types::Update>(),
+                dptree::Type::of::<teloxide_core::types::Me>(),
+            ],
+        );
 
         // If the `ctrlc_handler` feature is not enabled, don't emit a warning.
         let _ = ctrlc_handler;
@@ -229,7 +240,6 @@ where
             state: ShutdownToken::new(),
             distribution_f,
             worker_queue_size,
-            stack_size,
             workers: HashMap::new(),
             default_worker: None,
             current_number_of_active_workers: Default::default(),
@@ -254,15 +264,13 @@ where
 /// ## Update grouping
 ///
 /// `Dispatcher` generally processes updates concurrently. However, by default,
-/// updates from the same chat are processed sequentially. [Learn more about
-/// update grouping].
-///
-/// [update grouping]: distribution_function#update-grouping
+/// updates from the same chat are processed sequentially. Learn more about
+/// [update grouping].
 ///
 /// See also: ["Dispatching or
 /// REPLs?"](../dispatching/index.html#dispatching-or-repls)
 ///
-/// [`distribution_function`]: DispatcherBuilder::distribution_function
+/// [update grouping]: DispatcherBuilder#update-grouping
 pub struct Dispatcher<R, Err, Key> {
     bot: R,
     dependencies: DependencyMap,
@@ -272,7 +280,6 @@ pub struct Dispatcher<R, Err, Key> {
 
     distribution_f: fn(&Update) -> Option<Key>,
     worker_queue_size: usize,
-    stack_size: usize,
     current_number_of_active_workers: Arc<AtomicU32>,
     max_number_of_active_workers: Arc<AtomicU32>,
     // Tokio TX channel parts associated with chat IDs that consume updates sequentially.
@@ -295,8 +302,7 @@ struct Worker {
 // webhooks, so we can allow this too. See more there: https://core.telegram.org/bots/api#making-requests-when-getting-updates
 
 /// A handler that processes updates from Telegram.
-pub type UpdateHandler<Err> =
-    dptree::Handler<'static, DependencyMap, Result<(), Err>, DpHandlerDescription>;
+pub type UpdateHandler<Err> = dptree::Handler<'static, Result<(), Err>, DpHandlerDescription>;
 
 type DefaultHandler = Arc<dyn Fn(Arc<Update>) -> BoxFuture<'static, ()> + Send + Sync>;
 
@@ -312,21 +318,19 @@ where
         Err: Debug,
     {
         const DEFAULT_WORKER_QUEUE_SIZE: usize = 64;
-        const DEFAULT_STACK_SIZE: usize = 8 * 1024 * 1024;
 
         DispatcherBuilder {
             bot,
             dependencies: DependencyMap::new(),
             handler: Arc::new(handler),
             default_handler: Arc::new(|upd| {
-                log::warn!("Unhandled update: {:?}", upd);
+                log::warn!("Unhandled update: {upd:?}");
                 Box::pin(async {})
             }),
             error_handler: LoggingErrorHandler::new(),
             ctrlc_handler: false,
             worker_queue_size: DEFAULT_WORKER_QUEUE_SIZE,
             distribution_f: default_distribution_function,
-            stack_size: DEFAULT_STACK_SIZE,
         }
     }
 }
@@ -405,10 +409,11 @@ where
 
         let description = self.handler.description();
         let allowed_updates = description.allowed_updates();
-        log::debug!("hinting allowed updates: {:?}", allowed_updates);
+        log::debug!("hinting allowed updates: {allowed_updates:?}");
         update_listener.hint_allowed_updates(&mut allowed_updates.into_iter());
 
         let stop_token = Some(update_listener.stop_token());
+        self.start_listening(update_listener, update_listener_error_handler, stop_token).await;
 
         self.start_listening(
             update_listener,
@@ -482,10 +487,9 @@ where
             Ok(upd) => {
                 if let UpdateKind::Error(err) = upd.kind {
                     log::error!(
-                        "Cannot parse an update.\nError: {:?}\n\
+                        "Cannot parse an update.\nError: {err:?}\n\
                             This is a bug in teloxide-core, please open an issue here: \
                             https://github.com/teloxide/teloxide/issues.",
-                        err,
                     );
                     return;
                 }

@@ -6,7 +6,7 @@ use crate::{
     types::{Me, Message},
     utils::command::BotCommands,
 };
-use dptree::{di::DependencyMap, Handler};
+use dptree::Handler;
 
 use std::fmt::Debug;
 
@@ -46,6 +46,11 @@ pub trait HandlerExt<Output> {
     ///     passes the dialogue state forwards. Otherwise, logs an error and the
     ///     rest of the chain is not executed.
     ///
+    /// If `TELOXIDE_DIALOGUE_BEHAVIOUR` environmental variable exists and is
+    /// equal to "default", this function will not panic if it can't get the
+    /// dialogue (if, for example, the state enum was updated). Setting the
+    /// value to "panic" will return the initial behaviour.
+    ///
     /// ## Dependency requirements
     ///
     ///  - `Arc<S>`
@@ -58,11 +63,11 @@ pub trait HandlerExt<Output> {
     where
         S: Storage<D> + ?Sized + Send + Sync + 'static,
         <S as Storage<D>>::Error: Debug + Send,
-        D: Default + Send + Sync + 'static,
+        D: Default + Clone + Send + Sync + 'static,
         Upd: GetChatId + Clone + Send + Sync + 'static;
 }
 
-impl<Output> HandlerExt<Output> for Handler<'static, DependencyMap, Output, DpHandlerDescription>
+impl<Output> HandlerExt<Output> for Handler<'static, Output, DpHandlerDescription>
 where
     Output: Send + Sync + 'static,
 {
@@ -84,7 +89,7 @@ where
     where
         S: Storage<D> + ?Sized + Send + Sync + 'static,
         <S as Storage<D>>::Error: Debug + Send,
-        D: Default + Send + Sync + 'static,
+        D: Default + Clone + Send + Sync + 'static,
         Upd: GetChatId + Clone + Send + Sync + 'static,
     {
         self.chain(super::dialogue::enter::<Upd, S, D, Output>())
@@ -102,14 +107,14 @@ where
 ///  - [`crate::types::Message`]
 ///  - [`crate::types::Me`]
 #[must_use]
-pub fn filter_command<C, Output>() -> Handler<'static, DependencyMap, Output, DpHandlerDescription>
+pub fn filter_command<C, Output>() -> Handler<'static, Output, DpHandlerDescription>
 where
     C: BotCommands + Send + Sync + 'static,
     Output: Send + Sync + 'static,
 {
     dptree::filter_map(move |message: Message, me: Me| {
         let bot_name = me.user.username.expect("Bots must have a username");
-        message.text().and_then(|text| C::parse(text, &bot_name).ok())
+        message.text().or_else(|| message.caption()).and_then(|text| C::parse(text, &bot_name).ok())
     })
 }
 
@@ -126,8 +131,7 @@ where
 ///  - [`crate::types::Message`]
 ///  - [`crate::types::Me`]
 #[must_use]
-pub fn filter_mention_command<C, Output>(
-) -> Handler<'static, DependencyMap, Output, DpHandlerDescription>
+pub fn filter_mention_command<C, Output>() -> Handler<'static, Output, DpHandlerDescription>
 where
     C: BotCommands + Send + Sync + 'static,
     Output: Send + Sync + 'static,
@@ -135,11 +139,12 @@ where
     dptree::filter_map(move |message: Message, me: Me| {
         let bot_name = me.user.username.expect("Bots must have a username");
 
-        let command = message.text().and_then(|text| C::parse(text, &bot_name).ok());
+        let text_or_caption = message.text().or_else(|| message.caption());
+        let command = text_or_caption.and_then(|text| C::parse(text, &bot_name).ok());
         // If the parsing succeeds with a bot_name,
         // but fails without - there is a mention
         let is_username_required =
-            message.text().and_then(|text| C::parse(text, "").ok()).is_none();
+            text_or_caption.and_then(|text| C::parse(text, "").ok()).is_none();
 
         if !is_username_required {
             return None;
@@ -155,9 +160,8 @@ mod tests {
     use chrono::DateTime;
     use dptree::deps;
     use teloxide_core::types::{
-        Chat, ChatFullInfo, ChatId, ChatKind, ChatPrivate, LinkPreviewOptions, Me, MediaKind,
-        MediaText, Message, MessageCommon, MessageId, MessageKind, Update, UpdateId, UpdateKind,
-        User, UserId,
+        Chat, ChatId, ChatKind, ChatPrivate, LinkPreviewOptions, Me, MediaKind, MediaText, Message,
+        MessageCommon, MessageId, MessageKind, Update, UpdateId, UpdateKind, User, UserId,
     };
 
     use super::HandlerExt;
@@ -197,22 +201,7 @@ mod tests {
                         username: Some(String::from("Laster")),
                         first_name: Some(String::from("laster_alex")),
                         last_name: None,
-                        bio: None,
-                        has_private_forwards: None,
-                        has_restricted_voice_and_video_messages: None,
-                        business_intro: None,
-                        business_location: None,
-                        business_opening_hours: None,
-                        birthdate: None,
-                        personal_chat: None,
                     }),
-                    photo: None,
-                    available_reactions: None,
-                    pinned_message: None,
-                    message_auto_delete_time: None,
-                    has_hidden_members: false,
-                    has_aggressive_anti_spam_enabled: false,
-                    chat_full_info: ChatFullInfo::default(),
                 },
                 kind: MessageKind::Common(MessageCommon {
                     reply_to_message: None,
@@ -233,6 +222,8 @@ mod tests {
                     }),
                     reply_markup: None,
                     author_signature: None,
+                    paid_star_count: None,
+                    effect_id: None,
                     is_automatic_forward: false,
                     has_protected_content: false,
                     reply_to_story: None,
@@ -260,6 +251,7 @@ mod tests {
             can_read_all_group_messages: false,
             supports_inline_queries: false,
             can_connect_to_business: false,
+            has_main_web_app: false,
         }
     }
 

@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::types::{InlineKeyboardMarkup, InputMessageContent, MessageEntity, ParseMode};
+use crate::types::{FileId, InlineKeyboardMarkup, InputMessageContent, MessageEntity, ParseMode};
 
 /// Represents a link to a video file stored on the Telegram servers.
 ///
@@ -16,7 +16,7 @@ pub struct InlineQueryResultCachedVideo {
     pub id: String,
 
     /// A valid file identifier for the video file.
-    pub video_file_id: String,
+    pub video_file_id: FileId,
 
     /// Title for each result.
     pub title: String,
@@ -39,6 +39,10 @@ pub struct InlineQueryResultCachedVideo {
     /// specified instead of `parse_mode`.
     pub caption_entities: Option<Vec<MessageEntity>>,
 
+    /// Pass `true`, if the caption must be shown above the message media.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub show_caption_above_media: bool,
+
     /// [Inline keyboard] attached to the message.
     ///
     /// [Inline keyboard]: https://core.telegram.org/bots#inline-keyboards-and-on-the-fly-updating
@@ -49,20 +53,20 @@ pub struct InlineQueryResultCachedVideo {
 }
 
 impl InlineQueryResultCachedVideo {
-    pub fn new<S1, S2, S3>(id: S1, video_file_id: S2, title: S3) -> Self
+    pub fn new<S1, S2>(id: S1, video_file_id: FileId, title: S2) -> Self
     where
         S1: Into<String>,
         S2: Into<String>,
-        S3: Into<String>,
     {
         Self {
             id: id.into(),
-            video_file_id: video_file_id.into(),
+            video_file_id,
             title: title.into(),
             description: None,
             caption: None,
             parse_mode: None,
             caption_entities: None,
+            show_caption_above_media: false,
             reply_markup: None,
             input_message_content: None,
         }
@@ -76,11 +80,8 @@ impl InlineQueryResultCachedVideo {
         self
     }
 
-    pub fn video_file_id<S>(mut self, val: S) -> Self
-    where
-        S: Into<String>,
-    {
-        self.video_file_id = val.into();
+    pub fn video_file_id(mut self, val: FileId) -> Self {
+        self.video_file_id = val;
         self
     }
 
@@ -119,6 +120,11 @@ impl InlineQueryResultCachedVideo {
         C: IntoIterator<Item = MessageEntity>,
     {
         self.caption_entities = Some(val.into_iter().collect());
+        self
+    }
+
+    pub fn show_caption_above_media(mut self, val: bool) -> Self {
+        self.show_caption_above_media = val;
         self
     }
 

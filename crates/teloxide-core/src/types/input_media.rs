@@ -2,7 +2,7 @@ use std::iter;
 
 use serde::Serialize;
 
-use crate::types::{InputFile, MessageEntity, ParseMode};
+use crate::types::{InputFile, MessageEntity, ParseMode, Seconds};
 
 /// This object represents the content of a media message to be sent.
 ///
@@ -42,6 +42,10 @@ pub struct InputMediaPhoto {
     /// specified instead of `parse_mode`.
     pub caption_entities: Option<Vec<MessageEntity>>,
 
+    /// Pass `true`, if the caption must be shown above the message media.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub show_caption_above_media: bool,
+
     /// Pass `true` if the photo needs to be covered with a spoiler animation.
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub has_spoiler: bool,
@@ -49,7 +53,14 @@ pub struct InputMediaPhoto {
 
 impl InputMediaPhoto {
     pub const fn new(media: InputFile) -> Self {
-        Self { media, caption: None, parse_mode: None, caption_entities: None, has_spoiler: false }
+        Self {
+            media,
+            caption: None,
+            parse_mode: None,
+            caption_entities: None,
+            show_caption_above_media: false,
+            has_spoiler: false,
+        }
     }
 
     pub fn media(mut self, val: InputFile) -> Self {
@@ -75,6 +86,11 @@ impl InputMediaPhoto {
         C: IntoIterator<Item = MessageEntity>,
     {
         self.caption_entities = Some(val.into_iter().collect());
+        self
+    }
+
+    pub fn show_caption_above_media(mut self, val: bool) -> Self {
+        self.show_caption_above_media = val;
         self
     }
 
@@ -103,6 +119,16 @@ pub struct InputMediaVideo {
     /// using multipart/form-data.
     pub thumbnail: Option<InputFile>,
 
+    /// Cover for the video in the message. Pass a file_id to send a file that
+    /// exists on the Telegram servers (recommended), pass an HTTP URL for
+    /// Telegram to get a file from the Internet, or pass
+    /// “attach://<file_attach_name>” to upload a new one using
+    /// multipart/form-data under <file_attach_name> name
+    pub cover: Option<InputFile>,
+
+    /// Start timestamp for the video in the message
+    pub start_timestamp: Option<Seconds>,
+
     /// Caption of the video to be sent, 0-1024 characters.
     pub caption: Option<String>,
 
@@ -117,6 +143,10 @@ pub struct InputMediaVideo {
     /// List of special entities that appear in the caption, which can be
     /// specified instead of `parse_mode`.
     pub caption_entities: Option<Vec<MessageEntity>>,
+
+    /// Pass `true`, if the caption must be shown above the message media.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub show_caption_above_media: bool,
 
     /// Video width.
     pub width: Option<u16>,
@@ -141,8 +171,11 @@ impl InputMediaVideo {
             media,
             thumbnail: None,
             caption: None,
+            cover: None,
+            start_timestamp: None,
             parse_mode: None,
             caption_entities: None,
+            show_caption_above_media: false,
             width: None,
             height: None,
             duration: None,
@@ -169,6 +202,16 @@ impl InputMediaVideo {
         self
     }
 
+    pub fn cover(mut self, val: InputFile) -> Self {
+        self.cover = Some(val);
+        self
+    }
+
+    pub fn start_timestamp(mut self, val: Seconds) -> Self {
+        self.start_timestamp = Some(val);
+        self
+    }
+
     pub const fn parse_mode(mut self, val: ParseMode) -> Self {
         self.parse_mode = Some(val);
         self
@@ -179,6 +222,11 @@ impl InputMediaVideo {
         C: IntoIterator<Item = MessageEntity>,
     {
         self.caption_entities = Some(val.into_iter().collect());
+        self
+    }
+
+    pub fn show_caption_above_media(mut self, val: bool) -> Self {
+        self.show_caption_above_media = val;
         self
     }
 
@@ -243,6 +291,10 @@ pub struct InputMediaAnimation {
     /// specified instead of `parse_mode`.
     pub caption_entities: Option<Vec<MessageEntity>>,
 
+    /// Pass `true`, if the caption must be shown above the message media.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub show_caption_above_media: bool,
+
     /// Animation width.
     pub width: Option<u16>,
 
@@ -269,6 +321,7 @@ impl InputMediaAnimation {
             height: None,
             duration: None,
             caption_entities: None,
+            show_caption_above_media: false,
             has_spoiler: false,
         }
     }
@@ -301,6 +354,11 @@ impl InputMediaAnimation {
         C: IntoIterator<Item = MessageEntity>,
     {
         self.caption_entities = Some(val.into_iter().collect());
+        self
+    }
+
+    pub fn show_caption_above_media(mut self, val: bool) -> Self {
+        self.show_caption_above_media = val;
         self
     }
 
@@ -569,10 +627,11 @@ mod tests {
     fn photo_serialize() {
         let expected_json = r#"{"type":"photo","media":"123456"}"#;
         let photo = InputMedia::Photo(InputMediaPhoto {
-            media: InputFile::file_id("123456"),
+            media: InputFile::file_id("123456".into()),
             caption: None,
             parse_mode: None,
             caption_entities: None,
+            show_caption_above_media: false,
             has_spoiler: false,
         });
 
@@ -584,8 +643,10 @@ mod tests {
     fn video_serialize() {
         let expected_json = r#"{"type":"video","media":"123456"}"#;
         let video = InputMedia::Video(InputMediaVideo {
-            media: InputFile::file_id("123456"),
+            media: InputFile::file_id("123456".into()),
             thumbnail: None,
+            cover: None,
+            start_timestamp: None,
             caption: None,
             parse_mode: None,
             width: None,
@@ -593,6 +654,7 @@ mod tests {
             duration: None,
             supports_streaming: None,
             caption_entities: None,
+            show_caption_above_media: false,
             has_spoiler: false,
         });
 
@@ -604,7 +666,7 @@ mod tests {
     fn animation_serialize() {
         let expected_json = r#"{"type":"animation","media":"123456"}"#;
         let video = InputMedia::Animation(InputMediaAnimation {
-            media: InputFile::file_id("123456"),
+            media: InputFile::file_id("123456".into()),
             thumbnail: None,
             caption: None,
             parse_mode: None,
@@ -612,6 +674,7 @@ mod tests {
             height: None,
             duration: None,
             caption_entities: None,
+            show_caption_above_media: false,
             has_spoiler: false,
         });
 
@@ -623,7 +686,7 @@ mod tests {
     fn audio_serialize() {
         let expected_json = r#"{"type":"audio","media":"123456"}"#;
         let video = InputMedia::Audio(InputMediaAudio {
-            media: InputFile::file_id("123456"),
+            media: InputFile::file_id("123456".into()),
             thumbnail: None,
             caption: None,
             parse_mode: None,
@@ -641,7 +704,7 @@ mod tests {
     fn document_serialize() {
         let expected_json = r#"{"type":"document","media":"123456"}"#;
         let video = InputMedia::Document(InputMediaDocument {
-            media: InputFile::file_id("123456"),
+            media: InputFile::file_id("123456".into()),
             thumbnail: None,
             caption: None,
             parse_mode: None,

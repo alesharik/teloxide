@@ -1,13 +1,13 @@
 //! Possible error types.
 
-use std::io;
+use std::{io, sync::Arc};
 
 use thiserror::Error;
 
 use crate::types::{ChatId, ResponseParameters, Seconds};
 
 /// An error caused by sending a request to Telegram.
-#[derive(Debug, Error)]
+#[derive(Debug, Error, Clone)]
 pub enum RequestError {
     /// A Telegram API error.
     #[error("A Telegram's error: {0}")]
@@ -26,7 +26,7 @@ pub enum RequestError {
     /// Network error while sending a request to Telegram.
     #[error("A network error: {0}")]
     // NOTE: this variant must not be created by anything except the explicit From impl
-    Network(#[source] reqwest::Error),
+    Network(#[source] Arc<reqwest::Error>),
 
     /// Error while parsing a response from Telegram.
     ///
@@ -37,27 +37,27 @@ pub enum RequestError {
     #[error("An error while parsing JSON: {source} (raw: {raw:?})")]
     InvalidJson {
         #[source]
-        source: serde_json::Error,
+        source: Arc<serde_json::Error>,
         /// The raw string JSON that couldn't been parsed
         raw: Box<str>,
     },
 
     /// Occurs when trying to send a file to Telegram.
     #[error("An I/O error: {0}")]
-    Io(#[from] io::Error),
+    Io(#[from] Arc<io::Error>),
 }
 
 /// An error caused by downloading a file.
-#[derive(Debug, Error)]
+#[derive(Debug, Error, Clone)]
 pub enum DownloadError {
     /// A network error while downloading a file from Telegram.
     #[error("A network error: {0}")]
     // NOTE: this variant must not be created by anything except the explicit From impl
-    Network(#[source] reqwest::Error),
+    Network(#[source] Arc<reqwest::Error>),
 
     /// An I/O error while writing a file to destination.
     #[error("An I/O error: {0}")]
-    Io(#[from] std::io::Error),
+    Io(#[from] Arc<std::io::Error>),
 }
 
 pub trait AsResponseParameters {
@@ -254,7 +254,7 @@ impl_api_error! {
         /// 1. [`SendMessage`]
         ///
         /// [`SendMessage`]: crate::payloads::SendMessage
-        MessageToReplyNotFound = "Bad Request: reply message not found",
+        MessageToReplyNotFound = "Bad Request: message to be replied not found",
 
         /// Occurs when bot tries to
         MessageIdentifierNotSpecified = "Bad Request: message identifier is not specified",
@@ -318,13 +318,13 @@ impl_api_error! {
         /// [`SendPoll`]: crate::payloads::SendPoll
         PollMustHaveMoreOptions = "Bad Request: poll must have at least 2 option",
 
-        /// Occurs when bot tries to send poll with more than 10 options.
+        /// Occurs when bot tries to send poll with more than 12 options.
         ///
         /// May happen in methods:
         /// 1. [`SendPoll`]
         ///
         /// [`SendPoll`]: crate::payloads::SendPoll
-        PollCantHaveMoreOptions = "Bad Request: poll can't have more than 10 options",
+        PollCantHaveMoreOptions = "Bad Request: poll can't have more than 12 options",
 
         /// Occurs when bot tries to send poll with empty option (without text).
         ///
@@ -689,7 +689,7 @@ impl_api_error! {
         /// Occurs when multiple [`GetUpdates`] calls happen at the same time.
         ///
         /// This can happen if
-        /// 1. You are running multiple bot instances
+        /// 1. You are running multiple bot instances (including on different servers/hosting platforms)
         /// 2. You are running multiple update consumers (like `Dispatcher` or `repl`)
         /// 3. You are calling [`GetUpdates`] yourself and the second call is done before the first one finishes
         ///
@@ -758,13 +758,13 @@ impl From<DownloadError> for RequestError {
 
 impl From<reqwest::Error> for DownloadError {
     fn from(error: reqwest::Error) -> Self {
-        DownloadError::Network(hide_token(error))
+        DownloadError::Network(Arc::new(hide_token(error)))
     }
 }
 
 impl From<reqwest::Error> for RequestError {
     fn from(error: reqwest::Error) -> Self {
-        RequestError::Network(hide_token(error))
+        RequestError::Network(Arc::new(hide_token(error)))
     }
 }
 
@@ -859,7 +859,7 @@ mod tests {
                 ApiError::MessageToEditNotFound,
             ),
             (
-                "{\"data\": \"Bad Request: reply message not found\"}",
+                "{\"data\": \"Bad Request: message to be replied not found\"}",
                 ApiError::MessageToReplyNotFound,
             ),
             (
@@ -882,7 +882,7 @@ mod tests {
                 ApiError::PollMustHaveMoreOptions,
             ),
             (
-                "{\"data\": \"Bad Request: poll can't have more than 10 options\"}",
+                "{\"data\": \"Bad Request: poll can't have more than 12 options\"}",
                 ApiError::PollCantHaveMoreOptions,
             ),
             (

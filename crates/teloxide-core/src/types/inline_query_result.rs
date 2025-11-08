@@ -277,7 +277,7 @@ mod tests {
     fn cached_audio_min() {
         let structure = InlineQueryResult::CachedAudio(InlineQueryResultCachedAudio {
             id: String::from("id"),
-            audio_file_id: String::from("audio_file_id"),
+            audio_file_id: "audio_file_id".into(),
             caption: None,
             parse_mode: None,
             caption_entities: None,
@@ -296,7 +296,7 @@ mod tests {
     fn cached_audio_full() {
         let structure = InlineQueryResult::CachedAudio(InlineQueryResultCachedAudio {
             id: String::from("id"),
-            audio_file_id: String::from("audio_file_id"),
+            audio_file_id: "audio_file_id".into(),
             caption: Some(String::from("caption")),
             parse_mode: Some(ParseMode::Html),
             reply_markup: Some(InlineKeyboardMarkup::default()),
@@ -383,7 +383,7 @@ mod tests {
         let structure = InlineQueryResult::CachedDocument(InlineQueryResultCachedDocument {
             id: String::from("id"),
             title: String::from("title"),
-            document_file_id: String::from("document_file_id"),
+            document_file_id: "document_file_id".into(),
             description: None,
             caption: None,
             parse_mode: None,
@@ -404,7 +404,7 @@ mod tests {
         let structure = InlineQueryResult::CachedDocument(InlineQueryResultCachedDocument {
             id: String::from("id"),
             title: String::from("title"),
-            document_file_id: String::from("document_file_id"),
+            document_file_id: "document_file_id".into(),
             description: Some(String::from("description")),
             caption: Some(String::from("caption")),
             parse_mode: Some(ParseMode::Html),
@@ -496,11 +496,12 @@ mod tests {
     fn cached_gif_min() {
         let structure = InlineQueryResult::CachedGif(InlineQueryResultCachedGif {
             id: String::from("id"),
-            gif_file_id: String::from("gif_file_id"),
+            gif_file_id: "gif_file_id".into(),
             title: None,
             caption: None,
             parse_mode: None,
             caption_entities: None,
+            show_caption_above_media: false,
             reply_markup: None,
             input_message_content: None,
         });
@@ -516,11 +517,12 @@ mod tests {
     fn cached_gif_full() {
         let structure = InlineQueryResult::CachedGif(InlineQueryResultCachedGif {
             id: String::from("id"),
-            gif_file_id: String::from("gif_file_id"),
+            gif_file_id: "gif_file_id".into(),
             title: Some(String::from("title")),
             caption: Some(String::from("caption")),
             parse_mode: Some(ParseMode::Html),
             caption_entities: None,
+            show_caption_above_media: false,
             reply_markup: Some(InlineKeyboardMarkup::default()),
             input_message_content: Some(InputMessageContent::Text(InputMessageContentText {
                 message_text: String::from("message_text"),
@@ -557,6 +559,7 @@ mod tests {
             caption: None,
             parse_mode: None,
             caption_entities: None,
+            show_caption_above_media: false,
             reply_markup: None,
             input_message_content: None,
         });
@@ -582,6 +585,7 @@ mod tests {
             caption: Some(String::from("caption")),
             parse_mode: Some(ParseMode::Html),
             caption_entities: None,
+            show_caption_above_media: false,
             reply_markup: Some(InlineKeyboardMarkup::default()),
             input_message_content: Some(InputMessageContent::Text(InputMessageContentText {
                 message_text: String::from("message_text"),
@@ -608,11 +612,12 @@ mod tests {
     fn cached_mpeg4_gif_min() {
         let structure = InlineQueryResult::CachedMpeg4Gif(InlineQueryResultCachedMpeg4Gif {
             id: String::from("id"),
-            mpeg4_file_id: String::from("mpeg4_file_id"),
+            mpeg4_file_id: "mpeg4_file_id".into(),
             title: None,
             caption: None,
             parse_mode: None,
             caption_entities: None,
+            show_caption_above_media: false,
             reply_markup: None,
             input_message_content: None,
         });
@@ -628,11 +633,12 @@ mod tests {
     fn cached_mpeg4_gif_full() {
         let structure = InlineQueryResult::CachedMpeg4Gif(InlineQueryResultCachedMpeg4Gif {
             id: String::from("id"),
-            mpeg4_file_id: String::from("mpeg4_file_id"),
+            mpeg4_file_id: "mpeg4_file_id".into(),
             title: Some(String::from("title")),
             caption: Some(String::from("caption")),
             parse_mode: Some(ParseMode::Html),
             caption_entities: None,
+            show_caption_above_media: false,
             reply_markup: Some(InlineKeyboardMarkup::default()),
             input_message_content: Some(InputMessageContent::Text(InputMessageContentText {
                 message_text: String::from("message_text"),
@@ -669,6 +675,7 @@ mod tests {
             caption: None,
             parse_mode: None,
             caption_entities: None,
+            show_caption_above_media: false,
             reply_markup: None,
             input_message_content: None,
         });
@@ -694,6 +701,7 @@ mod tests {
             caption: Some(String::from("caption")),
             parse_mode: Some(ParseMode::Html),
             caption_entities: None,
+            show_caption_above_media: false,
             reply_markup: Some(InlineKeyboardMarkup::default()),
             input_message_content: Some(InputMessageContent::Text(InputMessageContentText {
                 message_text: String::from("message_text"),
@@ -720,12 +728,13 @@ mod tests {
     fn cached_photo_min() {
         let structure = InlineQueryResult::CachedPhoto(InlineQueryResultCachedPhoto {
             id: String::from("id"),
-            photo_file_id: String::from("photo_file_id"),
+            photo_file_id: "photo_file_id".into(),
             title: None,
             description: None,
             caption: None,
             parse_mode: None,
             caption_entities: None,
+            show_caption_above_media: false,
             reply_markup: None,
             input_message_content: None,
         });
@@ -741,12 +750,13 @@ mod tests {
     fn cached_photo_full() {
         let structure = InlineQueryResult::CachedPhoto(InlineQueryResultCachedPhoto {
             id: String::from("id"),
-            photo_file_id: String::from("photo_file_id"),
+            photo_file_id: "photo_file_id".into(),
             title: Some(String::from("title")),
             description: Some(String::from("description")),
             caption: Some(String::from("caption")),
             parse_mode: Some(ParseMode::Html),
             caption_entities: None,
+            show_caption_above_media: false,
             reply_markup: Some(InlineKeyboardMarkup::default()),
             input_message_content: Some(InputMessageContent::Text(InputMessageContentText {
                 message_text: String::from("message_text"),
@@ -782,6 +792,7 @@ mod tests {
             caption: None,
             parse_mode: None,
             caption_entities: None,
+            show_caption_above_media: false,
             reply_markup: None,
             input_message_content: None,
         });
@@ -806,6 +817,7 @@ mod tests {
             caption: Some(String::from("caption")),
             parse_mode: Some(ParseMode::Html),
             caption_entities: None,
+            show_caption_above_media: false,
             reply_markup: Some(InlineKeyboardMarkup::default()),
             input_message_content: Some(InputMessageContent::Text(InputMessageContentText {
                 message_text: String::from("message_text"),
@@ -832,7 +844,7 @@ mod tests {
     fn cached_sticker_min() {
         let structure = InlineQueryResult::CachedSticker(InlineQueryResultCachedSticker {
             id: String::from("id"),
-            sticker_file_id: String::from("sticker_file_id"),
+            sticker_file_id: "sticker_file_id".into(),
             reply_markup: None,
             input_message_content: None,
         });
@@ -848,7 +860,7 @@ mod tests {
     fn cached_sticker_full() {
         let structure = InlineQueryResult::CachedSticker(InlineQueryResultCachedSticker {
             id: String::from("id"),
-            sticker_file_id: String::from("sticker_file_id"),
+            sticker_file_id: "sticker_file_id".into(),
             reply_markup: Some(InlineKeyboardMarkup::default()),
             input_message_content: Some(InputMessageContent::Text(InputMessageContentText {
                 message_text: String::from("message_text"),
@@ -875,12 +887,13 @@ mod tests {
     fn cached_video_min() {
         let structure = InlineQueryResult::CachedVideo(InlineQueryResultCachedVideo {
             id: String::from("id"),
-            video_file_id: String::from("video_file_id"),
+            video_file_id: "video_file_id".into(),
             title: String::from("title"),
             description: None,
             caption: None,
             parse_mode: None,
             caption_entities: None,
+            show_caption_above_media: false,
             reply_markup: None,
             input_message_content: None,
         });
@@ -897,12 +910,13 @@ mod tests {
     fn cached_video_full() {
         let structure = InlineQueryResult::CachedVideo(InlineQueryResultCachedVideo {
             id: String::from("id"),
-            video_file_id: String::from("video_file_id"),
+            video_file_id: "video_file_id".into(),
             title: String::from("title"),
             description: Some(String::from("description")),
             caption: Some(String::from("caption")),
             parse_mode: Some(ParseMode::Html),
             caption_entities: None,
+            show_caption_above_media: false,
             reply_markup: Some(InlineKeyboardMarkup::default()),
             input_message_content: Some(InputMessageContent::Location(
                 InputMessageContentLocation {
@@ -934,6 +948,7 @@ mod tests {
             caption: None,
             parse_mode: None,
             caption_entities: None,
+            show_caption_above_media: false,
             video_width: None,
             video_height: None,
             video_duration: None,
@@ -960,6 +975,7 @@ mod tests {
             caption: Some(String::from("caption")),
             parse_mode: Some(ParseMode::Html),
             caption_entities: None,
+            show_caption_above_media: false,
             video_width: Some(1),
             video_height: Some(1),
             video_duration: Some(Seconds::from_seconds(1)),
@@ -988,7 +1004,7 @@ mod tests {
     fn cached_voice_min() {
         let structure = InlineQueryResult::CachedVoice(InlineQueryResultCachedVoice {
             id: String::from("id"),
-            voice_file_id: String::from("voice_file_id"),
+            voice_file_id: "voice_file_id".into(),
             title: String::from("title"),
             caption: None,
             parse_mode: None,
@@ -1009,7 +1025,7 @@ mod tests {
     fn cached_voice_full() {
         let structure = InlineQueryResult::CachedVoice(InlineQueryResultCachedVoice {
             id: String::from("id"),
-            voice_file_id: String::from("voice_file_id"),
+            voice_file_id: "voice_file_id".into(),
             title: String::from("title"),
             caption: Some(String::from("caption")),
             parse_mode: Some(ParseMode::Html),
@@ -1105,7 +1121,6 @@ mod tests {
             }),
             reply_markup: None,
             url: None,
-            hide_url: None,
             description: None,
             thumbnail_url: None,
             thumbnail_width: None,
@@ -1138,14 +1153,13 @@ mod tests {
             }),
             reply_markup: Some(InlineKeyboardMarkup::default()),
             url: Some(Url::parse("http://url/").unwrap()),
-            hide_url: Some(true),
             description: Some(String::from("description")),
             thumbnail_url: Some(Url::parse("http://thumb_url/").unwrap()),
             thumbnail_width: Some(1),
             thumbnail_height: Some(1),
         });
 
-        let expected_json = r#"{"type":"article","id":"id","title":"title","input_message_content":{"message_text":"message_text","link_preview_options":{"is_disabled":true}},"reply_markup":{"inline_keyboard":[]},"url":"http://url/","hide_url":true,"description":"description","thumbnail_url":"http://thumb_url/","thumbnail_width":1,"thumbnail_height":1}"#;
+        let expected_json = r#"{"type":"article","id":"id","title":"title","input_message_content":{"message_text":"message_text","link_preview_options":{"is_disabled":true}},"reply_markup":{"inline_keyboard":[]},"url":"http://url/","description":"description","thumbnail_url":"http://thumb_url/","thumbnail_width":1,"thumbnail_height":1}"#;
         let actual_json = serde_json::to_string(&structure).unwrap();
 
         assert_eq!(expected_json, actual_json);
@@ -1271,7 +1285,7 @@ mod tests {
             longitude: 1.0,
             title: String::from("title"),
             horizontal_accuracy: Some(1.0),
-            live_period: Some(1),
+            live_period: Some(1.into()),
             heading: Some(1),
             proximity_alert_radius: Some(1),
             reply_markup: Some(InlineKeyboardMarkup::default()),

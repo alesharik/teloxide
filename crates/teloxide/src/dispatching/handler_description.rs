@@ -9,6 +9,7 @@ use teloxide_core::types::AllowedUpdate;
 /// Handler description that is used by [`Dispatcher`].
 ///
 /// [`Dispatcher`]: crate::dispatching::Dispatcher
+#[derive(Debug, Clone)]
 pub struct DpHandlerDescription {
     allowed: InterestSet<Kind>,
 }
@@ -76,6 +77,7 @@ impl EventKind for Kind {
             CallbackQuery,
             ShippingQuery,
             PreCheckoutQuery,
+            PurchasedPaidMedia,
             Poll,
             PollAnswer,
             MyChatMember,
@@ -156,6 +158,7 @@ mod tests {
             CallbackQuery,
             ShippingQuery,
             PreCheckoutQuery,
+            PurchasedPaidMedia,
             Poll,
             PollAnswer,
             MyChatMember,
@@ -179,6 +182,7 @@ mod tests {
                 | CallbackQuery
                 | ShippingQuery
                 | PreCheckoutQuery
+                | PurchasedPaidMedia
                 | Poll
                 | PollAnswer
                 | MyChatMember

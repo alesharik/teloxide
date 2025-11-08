@@ -142,7 +142,13 @@ impl Bot {
 
         match std::env::var(TELOXIDE_API_URL) {
             Ok(env_api_url) => {
-                let api_url = reqwest::Url::parse(&env_api_url)
+                // Remove the trailing slash if it exists
+                let env_api_url = if env_api_url.ends_with('/') {
+                    env_api_url.trim_end_matches('/')
+                } else {
+                    &env_api_url
+                };
+                let api_url = reqwest::Url::parse(env_api_url)
                     .expect("Failed to parse the `TELOXIDE_API_URL` env variable");
                 bot.set_api_url(api_url)
             }
@@ -230,7 +236,7 @@ impl Bot {
         let api_url = Arc::clone(&self.api_url);
 
         let timeout_hint = payload.timeout_hint();
-        let params = serde_json::to_vec(payload)
+        let params = stacker::maybe_grow(256 * 1024, 1024 * 1024, || serde_json::to_vec(payload))
             // this `expect` should be ok since we don't write request those may trigger error here
             .expect("serialization of request to be infallible");
 

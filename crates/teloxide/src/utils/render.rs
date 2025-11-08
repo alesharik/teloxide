@@ -37,6 +37,7 @@ impl<'a> Renderer<'a> {
                     e.kind,
                     MEK::Bold
                         | MEK::Blockquote
+                        | MEK::ExpandableBlockquote
                         | MEK::Italic
                         | MEK::Underline
                         | MEK::Strikethrough
@@ -57,6 +58,7 @@ impl<'a> Renderer<'a> {
             let kind = match &entity.kind {
                 MEK::Bold => Kind::Bold,
                 MEK::Blockquote => Kind::Blockquote,
+                MEK::ExpandableBlockquote => Kind::ExpandableBlockquote,
                 MEK::Italic => Kind::Italic,
                 MEK::Underline => Kind::Underline,
                 MEK::Strikethrough => Kind::Strikethrough,
@@ -72,6 +74,25 @@ impl<'a> Renderer<'a> {
             // FIXME: maybe instead of clone store all the `kind`s in a seperate
             // vector and then just store the index here?
             tags.push(Tag::start(kind.clone(), entity.offset, index));
+
+            if matches!(kind, Kind::Blockquote | Kind::ExpandableBlockquote) {
+                let new_lines_indexes: Vec<usize> = text
+                    .chars()
+                    .skip(entity.offset)
+                    .take(entity.length)
+                    .enumerate()
+                    .filter_map(|(idx, c)| (c == '\n').then_some(idx))
+                    .collect();
+
+                for new_line_index in new_lines_indexes.iter() {
+                    tags.push(Tag::mid_new_line(
+                        kind.clone(),
+                        entity.offset + new_line_index + 1,
+                        index,
+                    ));
+                }
+            }
+
             tags.push(Tag::end(kind, entity.offset + entity.length, index));
         }
 
@@ -140,7 +161,7 @@ impl<'a> Renderer<'a> {
         self.format(&html::HTML)
     }
 
-    /// Renders and returns the text as a **Markdown-formatted** string.
+    /// Renders and returns the text as a **MarkdownV2-formatted** string.
     #[must_use]
     #[inline]
     pub fn as_markdown(&self) -> String {
@@ -164,7 +185,7 @@ mod test {
         let render = Renderer::new(text, &entities);
 
         assert_eq!(render.as_html(), "<b>Bold</b> <i>italic</i> <u>&lt;underline</u>_");
-        assert_eq!(render.as_markdown(), "**Bold** _\ritalic_\r __\r<underline__\r\\_");
+        assert_eq!(render.as_markdown(), "*Bold* _\ritalic_\r __\r<underline__\r\\_");
     }
 
     #[test]
@@ -204,12 +225,15 @@ mod test {
         let render = Renderer::new(text, &entities);
 
         assert_eq!(render.as_html(), "Some <b>bold <i>both</b> italics</i>");
-        assert_eq!(render.as_markdown(), "Some **bold _\rboth** italics_\r");
+        assert_eq!(render.as_markdown(), "Some *bold _\rboth* italics_\r");
     }
 
     #[test]
     fn test_render_complex() {
-        let text = "Hi how are you?\nnested entities are cool\nIm in a Blockquote!";
+        let text = "Hi how are you?\nnested entities are cool\nIm in a Blockquote!\nIm in a \
+                    multiline Blockquote!\n\nIm in a multiline Blockquote!\nIm in an expandable \
+                    Blockquote!\nIm in an expandable multiline Blockquote!\n\nIm in an expandable \
+                    multiline Blockquote!";
         let entities = vec![
             MessageEntity { kind: MEK::Bold, offset: 0, length: 2 },
             MessageEntity { kind: MEK::Italic, offset: 3, length: 3 },
@@ -231,6 +255,9 @@ mod test {
             },
             MessageEntity { kind: MEK::Code, offset: 36, length: 4 },
             MessageEntity { kind: MEK::Blockquote, offset: 41, length: 19 },
+            MessageEntity { kind: MEK::Blockquote, offset: 61, length: 60 },
+            MessageEntity { kind: MEK::ExpandableBlockquote, offset: 122, length: 31 },
+            MessageEntity { kind: MEK::ExpandableBlockquote, offset: 154, length: 84 },
         ];
 
         let render = Renderer::new(text, &entities);
@@ -239,12 +266,18 @@ mod test {
             render.as_html(),
             "<b>Hi</b> <i>how</i> <u>are</u> <s>you</s>?\n<b>n</b><b><u><s>este</s></u>d</b> \
             <a href=\"https://t.me/\">entities</a> <a href=\"tg://user?id=1234567\">are</a> <code>cool</code>\n\
-            <blockquote>Im in a Blockquote!</blockquote>"
+            <blockquote>Im in a Blockquote!</blockquote>\n\
+            <blockquote>Im in a multiline Blockquote!\n\nIm in a multiline Blockquote!</blockquote>\n\
+            <blockquote expandable>Im in an expandable Blockquote!</blockquote>\n\
+            <blockquote expandable>Im in an expandable multiline Blockquote!\n\nIm in an expandable multiline Blockquote!</blockquote>"
         );
         assert_eq!(
             render.as_markdown(),
-            "**Hi** _\rhow_\r __\rare__\r ~you~?\n**n****__\r~este~__\rd** [entities](https://t.me/) \
-            [are](tg://user?id=1234567) `cool`\n>Im in a Blockquote\\!"
+            "*Hi* _\rhow_\r __\rare__\r ~you~?\n*n**__\r~este~__\rd* [entities](https://t.me/) \
+             [are](tg://user?id=1234567) `cool`\n**>Im in a Blockquote\\!\n**>Im in a multiline \
+             Blockquote\\!\n>\n>Im in a multiline Blockquote\\!\n**>Im in an expandable \
+             Blockquote\\!||\n**>Im in an expandable multiline Blockquote\\!\n>\n>Im in an \
+             expandable multiline Blockquote\\!||"
         );
     }
 }

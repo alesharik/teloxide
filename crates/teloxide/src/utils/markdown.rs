@@ -25,7 +25,17 @@ pub fn bold(s: &str) -> String {
 #[must_use = "This function returns a new string, rather than mutating the argument, so calling it \
               without using its output does nothing useful"]
 pub fn blockquote(s: &str) -> String {
-    format!(">{s}")
+    format!("**>{}", s.replace('\n', "\n>"))
+}
+
+/// Applies the expandable block quotation style to the string.
+///
+/// Passed string will not be automatically escaped because it can contain
+/// nested markup.
+#[must_use = "This function returns a new string, rather than mutating the argument, so calling it \
+              without using its output does nothing useful"]
+pub fn expandable_blockquote(s: &str) -> String {
+    format!("**>{}||", s.replace('\n', "\n>"))
 }
 
 /// Applies the italic font style to the string.
@@ -119,7 +129,7 @@ pub fn code_inline(s: &str) -> String {
 /// Escapes the string to be shown "as is" within the Telegram [Markdown
 /// v2][spec] message style.
 ///
-/// [spec]: https://core.telegram.org/bots/api#html-style
+/// [spec]: https://core.telegram.org/bots/api#markdownv2-style
 #[must_use = "This function returns a new string, rather than mutating the argument, so calling it \
               without using its output does nothing useful"]
 pub fn escape(s: &str) -> String {
@@ -221,6 +231,16 @@ mod tests {
             user_mention(UserId(123_456_789), "pwner666"),
             "[pwner666](tg://user?id=123456789)"
         );
+    }
+
+    #[test]
+    fn test_blockquote() {
+        assert_eq!(blockquote("foobar\n\nfoo\nbar"), "**>foobar\n>\n>foo\n>bar");
+    }
+
+    #[test]
+    fn test_expandable_blockquote() {
+        assert_eq!(expandable_blockquote("foobar\n\nfoo\nbar"), "**>foobar\n>\n>foo\n>bar||");
     }
 
     #[test]

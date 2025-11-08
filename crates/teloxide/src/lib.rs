@@ -1,6 +1,6 @@
 //! A full-featured framework that empowers you to easily build [Telegram bots]
 //! using [Rust]. It handles all the difficult stuff so you can focus only on
-//! your business logic. Currently, version `7.2` of [Telegram Bot API] is
+//! your business logic. Currently, version `9.1` of [Telegram Bot API] is
 //! supported.
 //!
 //! For a high-level overview, see [our GitHub repository](https://github.com/teloxide/teloxide).
@@ -91,10 +91,12 @@
 //!        - User is provided by the (1)
 //!        - String is provided by the (2)
 //!     */
-//!     bot.send_message(user.id, format!("Hi! You sent: {message_text}"));
+//!     let _ = bot.send_message(user.id, format!("Hi! You sent: {message_text}")).await?;
 //!     Ok(())
 //! }
 //! ```
+//!
+//! For more info about dptree, please check out [_this guide_] on it!
 //!
 //! [update kinds]: crate::types::UpdateKind
 //! [message kinds]: crate::types::MessageKind
@@ -105,6 +107,7 @@
 //! [`MessageFilterExt`]: crate::dispatching::MessageFilterExt
 //! [`Update::filter_message`]: crate::dispatching::UpdateFilterExt::filter_message
 //! [`filter_map`]: crate::prelude::Handler::filter_map
+//! [_this guide_]: https://github.com/teloxide/teloxide/blob/master/DPTREE_GUIDE.md
 
 // This hack is used to cancel formatting for a Markdown table. See [1], [2], and [3].
 //

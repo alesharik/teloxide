@@ -3,13 +3,13 @@
 use serde::Serialize;
 
 use crate::types::{
-    BusinessConnectionId, InputFile, Message, MessageEntity, ParseMode, Recipient, ReplyMarkup,
-    ReplyParameters, ThreadId,
+    BusinessConnectionId, EffectId, InputFile, Message, MessageEntity, ParseMode, Recipient,
+    ReplyMarkup, ReplyParameters, ThreadId,
 };
 
 impl_payload! {
     @[multipart = voice]
-    /// Use this method to send audio files, if you want Telegram clients to display the file as a playable voice message. For this to work, your audio must be in an .OGG file encoded with OPUS (other formats may be sent as [`Audio`] or [`Document`]). On success, the sent [`Message`] is returned. Bots can currently send voice messages of up to 50 MB in size, this limit may be changed in the future.
+    /// Use this method to send audio files, if you want Telegram clients to display the file as a playable voice message. For this to work, your audio must be in an .OGG file encoded with OPUS, or in .MP3 format, or in .M4A format (other formats may be sent as [`Audio`] or [`Document`]). On success, the sent [`Message`] is returned. Bots can currently send voice messages of up to 50 MB in size, this limit may be changed in the future.
     ///
     /// [`Document`]: crate::types::Document
     /// [`Audio`]: crate::types::Audio
@@ -19,7 +19,7 @@ impl_payload! {
         required {
             /// Unique identifier for the target chat or username of the target channel (in the format `@channelusername`)
             pub chat_id: Recipient [into],
-            /// Audio file to send. Pass a file_id as String to send an audio file that exists on the Telegram servers (recommended), pass an HTTP URL as a String for Telegram to get an audio file from the Internet, or upload a new one using multipart/form-data. [More info on Sending Files »]
+            /// Audio file to send. Pass a file_id as FileId to send an audio file that exists on the Telegram servers (recommended), pass an HTTP URL as a String for Telegram to get an audio file from the Internet, or upload a new one using multipart/form-data. [More info on Sending Files »]
             ///
             /// [More info on Sending Files »]: crate::types::InputFile
             pub voice: InputFile,
@@ -43,6 +43,12 @@ impl_payload! {
             ///
             /// [silently]: https://telegram.org/blog/channels-2-0#silent-messages
             pub disable_notification: bool,
+            /// Protects the contents of sent message from forwarding and saving
+            pub protect_content: bool,
+            /// Pass `true` to allow up to 1000 messages per second, ignoring broadcasting limits for a fee of 0.1 Telegram Stars per message. The relevant Stars will be withdrawn from the bot's balance
+            pub allow_paid_broadcast: bool,
+            /// Unique identifier of the message effect to be added to the message; for private chats only
+            pub message_effect_id: EffectId,
             /// Description of the message to reply to
             pub reply_parameters: ReplyParameters,
             /// Additional interface options. A JSON-serialized object for an [inline keyboard], [custom reply keyboard], instructions to remove a reply keyboard or to force a reply from the user. Not supported for messages sent on behalf of a business account.

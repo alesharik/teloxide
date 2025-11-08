@@ -3,6 +3,129 @@ Note that the list of required changes is not fully exhaustive and it may lack s
 
 ## unreleased
 
+## 0.16 -> 0.17
+
+### teloxide
+
+TBA removed `hide_url` field from `InlineQueryResultArticle`. Just don't pass the url instead:
+
+```diff
+InlineQueryResultArticle::new(
+    "01".to_string(),
+    "DuckDuckGo Search".to_string(),
+    InputMessageContent::Text(InputMessageContentText::new(format!(
+        "https://duckduckgo.com/?q={}",
+        q.query
+    ))),
+)
+-.url("https://duckduckgo.com/about".parse().unwrap())
+-.hide_url(true)
+```
+
+`create_forum_topic` was fixed to only require `chat_id` and `name`, making `icon_color` and `icon_custom_emoji_id` optional
+
+```diff
+-bot.create_forum_topic(chat_id, name, icon_color, icon_custom_emoji_id).await
++bot.create_forum_topic(chat_id, name)
++.icon_color(icon_color)
++.icon_custom_emoji_id(icon_custom_emoji_id)
++.await
+```
+
+`TransactionPartnerUser` was reworked to have a `kind` field. To access the fields you had you need to call an appropriate getter
+
+```diff
+-let invoice_payload = transaction_partner_user.invoice_payload;
++let invoice_payload = transaction_partner_user.invoice_payment().unwrap().invoice_payload;
+
+-let gift = transaction_partner_user.gift;
++let gift = transaction_partner_user.gift_purchase().unwrap().gift;
+```
+
+## 0.15 -> 0.16
+
+### teloxide
+
+A lot of previously `String` type ids got their own types. To easily convert into them you can just add `.into()`
+
+```diff
+-InputFile::file_id("123456")
++InputFile::file_id("123456".into())
+```
+
+Or you could also:
+
+```diff
+-InputFile::file_id("123456")
++InputFile::file_id(FileId("123456".to_string()))
+```
+
+And borrowed id types will have to be cloned now:
+
+```diff
+-bot.answer_callback_query(&q.id).await?;
++bot.answer_callback_query(q.id.clone()).await?;
+```
+
+Also `refund_star_payment`, `SuccessfulPayment` and `StarTransaction` switched from `String` to `TelegramTransactionId` in `telegram_payment_charge_id`/`id`:
+
+```diff
+-bot.refund_star_payment(user_id, "txn").await?;
++bot.refund_star_payment(user_id, "txn".into()).await?;
+```
+
+dptree's handler signature has changed:
+
+```diff
+type UpdHandler = Handler<
+    'static,
+-    DependencyMap,
+    core::result::Result<(), Box<dyn std::error::Error + Send + Sync + 'static>>,
+    teloxide::dispatching::DpHandlerDescription,
+>;
+```
+
+## 0.14.1 -> 0.15.0
+
+### teloxide
+
+The `DispatcherBuilder::stack_size` method is now a no-op; you can remove it from your code if you use it:
+
+```diff
+Dispatcher::builder(bot, handler)
+    .dependencies(dptree::deps![/* ... */])
+    .default_handler(|upd| async move {
+        log::warn!("Unhandled update: {:?}", upd);
+    })
+    .error_handler(LoggingErrorHandler::with_custom_text(
+        "An error has occurred in the dispatcher",
+    ))
+-    .stack_size(8 * 1024 * 1024)
++
+    .enable_ctrlc_handler()
+    .build()
+    .dispatch()
+    .await;
+```
+
+Some underlying errors in `RequestError` and `DownloadError` are now wrapped in an `Arc` (e.g., `reqwest::Error`, `serde_json::Error` and others). If you happen to construct those variants, you must now wrap them via `Arc::new`:
+
+```diff
+- RequestError::Network(my_error)
++ RequestError::Network(Arc::new(my_error))
+```
+
+(This is done in order to implement `Clone` for `RequestError` and `DownloadError`.)
+
+Also, note that our examples now contain code with "middlewares" that show how to execute functions _before_ and _after_ some endpoint:
+  - [`examples/middlewares.rs`]
+  - [`examples/middlewares_fallible.rs`]
+
+[`examples/middlewares.rs`]: crates/teloxide/examples/middlewares.rs
+[`examples/middlewares_fallible.rs`]: crates/teloxide/examples/middlewares_fallible.rs
+
+## 0.13 -> 0.14
+
 ### teloxide
 
 We have finally introduced three different categories for syntactic sugar:
@@ -48,6 +171,54 @@ We have finally introduced three different categories for syntactic sugar:
 ```
 
 And others like `bot.edit_live_location`, `bot.stop_live_location`, `bot.set_reaction`, `bot.pin`, `bot.unpin`, `bot.edit_caption`, `bot.edit_media`, `bot.edit_reply_markup`, `bot.stop_poll_message` and `bot.copy` methods
+
+#### Breaking changes introduced by newer TBA versions support
+
+Type of argument `options` in `send_poll` method was changed from `Vec<String>` to `Vec<InputPollOption>`. But `InputPollOption` can be constructed from `String/&str`:
+
+```diff
+-let options: Vec<String> = vec!["First".to_owned(), "Second".to_owned(), "Third".to_owned()];
+-bot.send_poll(msg.chat.id, "Question", options).await?;
++let options: Vec<InputPollOption> = vec!["First".into(), "Second".into(), "Third".into()];
++bot.send_poll(msg.chat.id, "Question", options).await?;
+```
+
+`getChat` method now returns `ChatFullInfo` struct instead of `Chat` and most of the fields and methods was moved from `Chat` to `ChatFullInfo`.
+Also `available_reactions` was moved from `Chat` to `ChatPublicFullInfo`. `ChatFullInfo` got `available_reactions` method for convenience:
+
+```diff
+-let chat: Chat = bot.get_chat(msg.chat.id).await?;
+-let availible_reactions = chat.available_reactions;
++let chat: ChatFullInfo = bot.get_chat(msg.chat.id).await?;
++let availible_reactions = chat.available_reactions();
+```
+
+`live_period` field type became `LivePeriod` everywhere instead of `u32` and it implements `Into<LivePeriod> for u32`:
+
+```diff
+-live_period: Some(1),
++live_period: Some(1.into()),
+```
+
+`mentioned_users()` method in the `ChatMemberUpdated` and `Message` structs no longer able to track mentioned users in the chat e.g. from pinned messages in it. `mentioned_users()` method in the `ChatJoinRequest` struct was removed completely as it become useless. The only way to track mentioned users again is to call `get_chat()` method and call `mentioned_users()` on the returned `ChatFullInfo` struct.
+
+`provider_token` field in `InputMessageContentInvoice` struct and `sendInvoice` and `createInvoiceLink` methods is now optional:
+
+```diff
+bot.create_invoice_link(
+    "Name",
+    "Description",
+    "payload",
+-    "",
+    "XTR",
+    [LabeledPrice {
+        label: "Subscription",
+        amount: 100,
+    }],
+)
++.provider_token("provider_token")
+.await?;
+```
 
 ## 0.11 -> 0.12
 

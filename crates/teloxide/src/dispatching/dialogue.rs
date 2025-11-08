@@ -99,13 +99,13 @@ pub use self::{RedisStorage, RedisStorageError};
 #[cfg(any(feature = "sqlite-storage-nativetls", feature = "sqlite-storage-rustls"))]
 pub use self::{SqliteStorage, SqliteStorageError};
 
-#[cfg(feature = "postgres-storage-nativetls")]
+#[cfg(any(feature = "postgres-storage-nativetls", feature = "postgres-storage-rustls"))]
 pub use self::{PostgresStorage, PostgresStorageError};
 
 pub use get_chat_id::GetChatId;
 pub use storage::*;
 
-use dptree::{prelude::DependencyMap, Handler};
+use dptree::Handler;
 use teloxide_core::types::ChatId;
 
 use std::{fmt::Debug, marker::PhantomData, sync::Arc};
@@ -114,6 +114,8 @@ use super::DpHandlerDescription;
 
 mod get_chat_id;
 mod storage;
+
+const TELOXIDE_DIALOGUE_BEHAVIOUR: &str = "TELOXIDE_DIALOGUE_BEHAVIOUR";
 
 /// A handle for controlling dialogue state.
 #[derive(Debug)]
@@ -205,6 +207,11 @@ where
 
 /// Enters a dialogue context.
 ///
+/// If `TELOXIDE_DIALOGUE_BEHAVIOUR` environmental variable exists and is equal
+/// to "default", this function will not panic if it can't get the dialogue (if,
+/// for example, the state enum was updated). Setting the value to "panic" will
+/// return the initial behaviour.
+///
 /// A call to this function is the same as `dptree::entry().enter_dialogue()`.
 ///
 /// See [`HandlerExt::enter_dialogue`].
@@ -216,11 +223,11 @@ where
 ///
 /// [`HandlerExt::enter_dialogue`]: super::HandlerExt::enter_dialogue
 #[must_use]
-pub fn enter<Upd, S, D, Output>() -> Handler<'static, DependencyMap, Output, DpHandlerDescription>
+pub fn enter<Upd, S, D, Output>() -> Handler<'static, Output, DpHandlerDescription>
 where
     S: Storage<D> + ?Sized + Send + Sync + 'static,
     <S as Storage<D>>::Error: Debug + Send,
-    D: Default + Send + Sync + 'static,
+    D: Default + Clone + Send + Sync + 'static,
     Upd: GetChatId + Clone + Send + Sync + 'static,
     Output: Send + Sync + 'static,
 {
@@ -231,10 +238,23 @@ where
     .filter_map_async(|dialogue: Dialogue<D, S>| async move {
         match dialogue.get_or_default().await {
             Ok(dialogue) => Some(dialogue),
-            Err(err) => {
-                log::error!("dialogue.get_or_default() failed: {:?}", err);
-                None
-            }
+            Err(err) => match std::env::var(TELOXIDE_DIALOGUE_BEHAVIOUR).as_deref() {
+                Ok("default") => {
+                    let default = D::default();
+                    dialogue.update(default.clone()).await.ok()?;
+                    Some(default)
+                }
+                Ok("panic") | Err(_) => {
+                    log::error!("dialogue.get_or_default() failed: {err:?}");
+                    None
+                }
+                Ok(_) => {
+                    panic!(
+                        "`TELOXIDE_DIALOGUE_BEHAVIOUR` env variable should be one of: \
+                         default/panic"
+                    )
+                }
+            },
         }
     })
 }
