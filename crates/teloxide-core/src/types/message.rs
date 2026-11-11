@@ -403,6 +403,7 @@ pub enum MediaKind {
     Checklist(MediaChecklist),
     Sticker(MediaSticker),
     Story(MediaStory),
+    RichMessage(MediaRichMessage),
     Text(MediaText),
     Video(MediaVideo),
     VideoNote(MediaVideoNote),
@@ -560,6 +561,18 @@ pub struct MediaPoll {
 pub struct MediaChecklist {
     /// Message is a checklist, information about the checklist.
     pub checklist: Checklist,
+}
+
+/// A rich formatted message (Bot API 10.1+ `Message.rich_message`), such as an
+/// article posted in a channel.
+///
+/// The content is kept as raw JSON (`{"blocks": [RichBlock...], "is_rtl":
+/// bool}`), see <https://core.telegram.org/bots/api#richmessage>.
+#[serde_with::skip_serializing_none]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct MediaRichMessage {
+    /// Message is a rich formatted message, its content as Telegram sent it.
+    pub rich_message: serde_json::Value,
 }
 
 #[serde_with::skip_serializing_none]
@@ -857,15 +870,15 @@ mod getters {
         self, message::MessageKind::*, Chat, ChatId, ChatMigration, EffectId, LinkPreviewOptions,
         MaybeInaccessibleMessage, MediaAnimation, MediaAudio, MediaChecklist, MediaContact,
         MediaDocument, MediaGame, MediaKind, MediaLocation, MediaPaid, MediaPhoto, MediaPoll,
-        MediaSticker, MediaStory, MediaText, MediaVenue, MediaVideo, MediaVideoNote, MediaVoice,
-        Message, MessageChannelChatCreated, MessageChatShared, MessageChecklistTasksAdded,
-        MessageChecklistTasksDone, MessageCommon, MessageConnectedWebsite, MessageDeleteChatPhoto,
-        MessageDice, MessageDirectMessagePriceChanged, MessageEntity, MessageGroupChatCreated,
-        MessageId, MessageInvoice, MessageLeftChatMember, MessageNewChatMembers,
-        MessageNewChatPhoto, MessageNewChatTitle, MessageOrigin, MessagePassportData,
-        MessagePinned, MessageProximityAlertTriggered, MessageSuccessfulPayment,
-        MessageSupergroupChatCreated, MessageUsersShared, MessageVideoChatParticipantsInvited,
-        PhotoSize, Story, TextQuote, User,
+        MediaRichMessage, MediaSticker, MediaStory, MediaText, MediaVenue, MediaVideo,
+        MediaVideoNote, MediaVoice, Message, MessageChannelChatCreated, MessageChatShared,
+        MessageChecklistTasksAdded, MessageChecklistTasksDone, MessageCommon,
+        MessageConnectedWebsite, MessageDeleteChatPhoto, MessageDice,
+        MessageDirectMessagePriceChanged, MessageEntity, MessageGroupChatCreated, MessageId,
+        MessageInvoice, MessageLeftChatMember, MessageNewChatMembers, MessageNewChatPhoto,
+        MessageNewChatTitle, MessageOrigin, MessagePassportData, MessagePinned,
+        MessageProximityAlertTriggered, MessageSuccessfulPayment, MessageSupergroupChatCreated,
+        MessageUsersShared, MessageVideoChatParticipantsInvited, PhotoSize, Story, TextQuote, User,
     };
 
     use super::{
@@ -1143,6 +1156,7 @@ mod getters {
                     | MediaKind::Location(_)
                     | MediaKind::Poll(_)
                     | MediaKind::Checklist(_)
+                    | MediaKind::RichMessage(_)
                     | MediaKind::Sticker(_)
                     | MediaKind::Story(_)
                     | MediaKind::Text(_)
@@ -1175,6 +1189,7 @@ mod getters {
                     | MediaKind::Location(_)
                     | MediaKind::Poll(_)
                     | MediaKind::Checklist(_)
+                    | MediaKind::RichMessage(_)
                     | MediaKind::Sticker(_)
                     | MediaKind::Story(_)
                     | MediaKind::Text(_)
@@ -1363,6 +1378,19 @@ mod getters {
                     media_kind: MediaKind::Poll(MediaPoll { poll, .. }),
                     ..
                 }) => Some(poll),
+                _ => None,
+            }
+        }
+
+        /// The rich formatted message content as raw JSON, see
+        /// [`MediaRichMessage`].
+        #[must_use]
+        pub fn rich_message(&self) -> Option<&serde_json::Value> {
+            match &self.kind {
+                Common(MessageCommon {
+                    media_kind: MediaKind::RichMessage(MediaRichMessage { rich_message }),
+                    ..
+                }) => Some(rich_message),
                 _ => None,
             }
         }
@@ -3174,5 +3202,48 @@ mod tests {
         }"#;
         let message: Message = from_str(json).unwrap();
         assert!(message.show_caption_above_media())
+    }
+
+    /// A channel post written in the rich text editor (an "article"), Bot API
+    /// 10.1+. Without `MediaKind::RichMessage` it has no media kind and
+    /// falls through to `MessageKind::Empty`.
+    #[test]
+    fn de_rich_message_channel_post() {
+        let json = r#"{
+          "message_id": 42,
+          "sender_chat": {"id": -1001234567890, "title": "Blog", "type": "channel"},
+          "chat": {"id": -1001234567890, "title": "Blog", "type": "channel"},
+          "date": 1762860000,
+          "rich_message": {
+            "blocks": [
+              {"type": "heading", "size": 1, "text": "Title"},
+              {"type": "paragraph", "text": ["Hello, ", {"type": "bold", "text": "world"}]}
+            ]
+          }
+        }"#;
+        let message: Message = from_str(json).unwrap();
+
+        assert_matches!(
+            message.kind,
+            MessageKind::Common(MessageCommon { media_kind: MediaKind::RichMessage(_), .. })
+        );
+        let rich = message.rich_message().unwrap();
+        assert_eq!(rich["blocks"][0]["text"], "Title");
+        assert_eq!(message.text(), None);
+    }
+
+    /// A plain text message still deserializes as text.
+    #[test]
+    fn de_text_is_not_rich_message() {
+        let json = r#"{
+          "message_id": 43,
+          "chat": {"id": -1001234567890, "title": "Blog", "type": "channel"},
+          "date": 1762860000,
+          "text": "plain"
+        }"#;
+        let message: Message = from_str(json).unwrap();
+
+        assert_eq!(message.rich_message(), None);
+        assert_eq!(message.text(), Some("plain"));
     }
 }
